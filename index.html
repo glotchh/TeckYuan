@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teck Yuan's Quest for Gregory: Definitive Edition</title>
+    <title>Teck Yuan's Quest for Gregor: Definitive Edition</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         body { margin: 0; padding: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; }
@@ -105,7 +105,7 @@
         </div>
         <div class="hud-panel" id="objective-panel">
             <div id="objective-title">Current Quest</div>
-            <div id="objective-msg">Defeat Fart Entities (0/3) to unseal Gregory's Arcane Gate!</div>
+            <div id="objective-msg">Defeat Fart Entities (0/3) to unseal Gregor's Arcane Gate!</div>
         </div>
     </div>
 
@@ -171,14 +171,14 @@
     </div>
 
     <div id="win-screen" class="overlay-screen" style="background: radial-gradient(circle, #1e3c72 0%, #0f2027 100%);">
-        <h1 style="color: #2ecc71;">❤️ Gregory Reclaimed ❤️</h1>
+        <h1 style="color: #2ecc71;">❤️ Gregor Reclaimed ❤️</h1>
         <p>Through toxic battlefields and smog-ridden trials, Teck Yuan's blade remained unbroken. The dynamic field barrier shatters, reuniting the destined pair into pure fragrant eternity!</p>
         <button onclick="location.reload()" style="background:#2ecc71; box-shadow:0 4px 0 #27ae60; padding:15px 40px; font-size:20px;">Begin Anew</button>
     </div>
 
     <div id="lose-screen" class="overlay-screen" style="background: radial-gradient(circle, #2c3e50 0%, #000000 100%);">
         <h1 style="color: #e74c3c;">💨 Asphyxiated & Defeated 💨</h1>
-        <p>The noxious toxic density overpowered Teck Yuan's gear. He collapses into unconsciousness as the Fart Monsters keep Gregory imprisoned...</p>
+        <p>The noxious toxic density overpowered Teck Yuan's gear. He collapses into unconsciousness as the Fart Monsters keep Gregor imprisoned...</p>
         <button onclick="location.reload()" style="background:#e74c3c; box-shadow:0 4px 0 #c0392b; padding:15px 40px; font-size:20px;">Re-ignite Resolution</button>
     </div>
 </div>
@@ -206,7 +206,7 @@ const player = {
 };
 
 const gate = { x: 760, y: 220, width: 24, height: 160, open: false };
-const gregory = { x: 830, y: 285, width: 36, height: 36 };
+const Gregor = { x: 830, y: 285, width: 36, height: 36 };
 
 // Advanced Entity Blueprints
 let monsters = [
@@ -293,7 +293,7 @@ function updateOverworld() {
     // Dynamic Gate Quest State Verification
     if (monstersDefeated >= targetMonsters) {
         gate.open = true;
-        document.getElementById('objective-msg').innerText = "Barrier Overloaded! Access Gregory immediately!";
+        document.getElementById('objective-msg').innerText = "Barrier Overloaded! Access Gregor immediately!";
         document.getElementById('objective-msg').style.color = "#2ecc71";
     }
 
@@ -302,7 +302,7 @@ function updateOverworld() {
         player.x = gate.x - player.width;
     }
 
-    if (gate.open && checkCollision(player, gregory)) {
+    if (gate.open && checkCollision(player, Gregor)) {
         gameState = 'won';
         document.getElementById('win-screen').style.display = 'flex';
         return;
@@ -358,14 +358,14 @@ function drawGameSurface() {
     ctx.lineWidth = 3;
     ctx.strokeRect(gate.x, gate.y, gate.width, gate.height);
 
-    // Draw Sanctuary target (Gregory)
+    // Draw Sanctuary target (Gregor)
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
-    ctx.arc(gregory.x + gregory.width/2, gregory.y + gregory.height/2, gregory.width/2, 0, Math.PI*2);
+    ctx.arc(Gregor.x + Gregor.width/2, Gregor.y + Gregor.height/2, Gregor.width/2, 0, Math.PI*2);
     ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText("GREGORY ❤️", gregory.x - 18, gregory.y - 8);
+    ctx.fillText("Gregor ❤️", Gregor.x - 18, Gregor.y - 8);
 
     // Draw Player Hero Entity
     ctx.fillStyle = '#3498db';
@@ -624,7 +624,7 @@ function processBattleVictory() {
     document.getElementById('battle-log').innerText = "Victory! The toxic anomaly is successfully neutralised!";
     
     // Synchronize quest progression details
-    document.getElementById('objective-msg').innerText = `Defeat Fart Entities (${monstersDefeated}/3) to unseal Gregory's Arcane Gate!`;
+    document.getElementById('objective-msg').innerText = `Defeat Fart Entities (${monstersDefeated}/3) to unseal Gregor's Arcane Gate!`;
 
     setTimeout(() => {
         document.getElementById('battle-screen').style.display = 'none';
