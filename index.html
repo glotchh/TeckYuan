@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teck Yuan's Quest for Gregory</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; padding: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; }
+        #game-container { position: relative; width: 800px; height: 600px; background: #34495e; border: 4px solid #2c3e50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* Overworld Screen */
+        canvas { display: block; background: #27ae60; }
+        
+        /* UI Overlay */
+        #ui-layer { position: absolute; top: 10px; left: 10px; font-weight: bold; font-size: 18px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        
+        /* Battle Screen Overlay */
+        #battle-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: space-between; padding: 40px; align-items: center; }
+        .battle-arena { display: flex; width: 100%; justify-content: space-around; align-items: center; flex: 1; }
+        .fighter { display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 20px; font-weight: bold; }
+        .fighter img, .fighter .sprite-placeholder { width: 100px; height: 100px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 40px; margin-bottom: 10px; }
+        .ty-sprite { background: #3498db; }
+        .monster-sprite { background: #8e44ad; box-shadow: 0 0 20px #9b59b6; }
+        .gregory-sprite { background: #e74c3c; box-shadow: 0 0 20px #2ecc71; }
+        .hp-bar-container { width: 150px; background: #c0392b; height: 15px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; margin-top: 5px; }
+        .hp-bar { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
+        
+        #battle-log { width: 100%; max-height: 80px; overflow-y: auto; background: rgba(255,255,255,0.1); border-radius: 5px; padding: 10px; text-align: center; font-style: italic; font-size: 16px; margin: 15px 0; color: #f1c40f; }
+        .battle-actions { display: flex; gap: 15px; }
+        button { background: #e67e22; border: none; padding: 12px 25px; color: white; font-size: 18px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #d35400; }
+        button:hover { background: #d35400; transform: translateY(-2px); }
+        button:active { transform: translateY(2px); box-shadow: none; }
+        
+        /* Screen Overlays (Win/Loss) */
+        .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: rgba(0,0,0,0.9); padding: 20px; }
+        .overlay-screen h1 { font-size: 45px; margin-bottom: 10px; color: #e74c3c; text-shadow: 3px 3px 0 #000; }
+        .overlay-screen p { font-size: 20px; margin-bottom: 20px; max-width: 600px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Overworld Canvas -->
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div>Teck Yuan HP: <span id="ui-hp">100</span>/100</div>
+        <div>Monsters Defeated: <span id="ui-count">0</span>/3</div>
+        <div id="objective-msg" style="color: #f1c40f; font-size: 14px; margin-top: 5px;">Defeat 3 Fart Monsters to open Gregory's Gate!</div>
+    </div>
+
+    <!-- Turn-Based Battle Screen -->
+    <div id="battle-screen">
+        <h2 style="color: #f39c12; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Battle Mode!</h2>
+        <div class="battle-arena">
+            <div class="fighter">
+                <div class="sprite-placeholder ty-sprite">👦🏻</div>
+                <div>Teck Yuan</div>
+                <div class="hp-bar-container"><div id="player-hp-bar" class="hp-bar"></div></div>
+                <div style="font-size: 14px; margin-top: 5px;"><span id="battle-player-hp">100</span>/100 HP</div>
+            </div>
+            <div style="font-size: 30px; font-style: italic; color: #7f8c8d;">VS</div>
+            <div class="fighter">
+                <div class="sprite-placeholder monster-sprite">💨</div>
+                <div>Fart Monster</div>
+                <div class="hp-bar-container"><div id="enemy-hp-bar" class="hp-bar"></div></div>
+                <div style="font-size: 14px; margin-top: 5px;"><span id="battle-enemy-hp">50</span>/50 HP</div>
+            </div>
+        </div>
+        <div id="battle-log">A smelly Fart Monster blocks your path to Gregory!</div>
+        <div class="battle-actions">
+            <button onclick="playerAction('attack')">Sword Slash</button>
+            <button onclick="playerAction('heal')" style="background: #2ecc71; box-shadow: 0 4px 0 #27ae60;">Eat Snack (+HP)</button>
+            <button onclick="playerAction('spray')" style="background: #9b59b6; box-shadow: 0 4px 0 #8e44ad;">Fart Spray (Crit)</button>
+        </div>
+    </div>
+
+    <!-- Win Screen -->
+    <div id="win-screen" class="overlay-screen" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+        <h1 style="color: #2ecc71;">❤️ Gregory is Rescued! ❤️</h1>
+        <p>Teck Yuan braved the noxious fumes, cut through the gaseous hordes, and finally reached his beloved Gregory. Their love conquers all scents!</p>
+        <button onclick="location.reload()">Play Again</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="lose-screen" class="overlay-screen">
+        <h1>💨 Suffocated! 💨</h1>
+        <p>Teck Yuan fainted from the toxic gas. The Fart Monsters have won this time...</p>
+        <button onclick="location.reload()">Try Again</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game State Management
+let gameState = 'overworld'; // 'overworld', 'battle', 'won', 'lost'
+let monstersDefeated = 0;
+const targetMonsters = 3;
+
+// Player Properties
+const player = {
+    x: 100, y: 300,
+    speed: 4, width: 32, height: 32,
+    hp: 100, maxHp: 100
+};
+
+// Gate and Gregory
+const gate = { x: 700, y: 250, width: 20, height: 100, open: false };
+const gregory = { x: 750, y: 285, width: 32, height: 32 };
+
+// Input Handling
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// Monster Array
+let monsters = [
+    { x: 300, y: 150, width: 35, height: 35, vx: 1.5, vy: 1, maxHp: 50, hp: 50 },
+    { x: 450, y: 400, width: 35, height: 35, vx: -1, vy: 1.5, maxHp: 60, hp: 60 },
+    { x: 550, y: 200, width: 35, height: 35, vx: 1.2, vy: -1.2, maxHp: 55, hp: 55 }
+];
+let activeEnemyIndex = null;
+
+// --- OVERWORLD ENGINE ---
+
+function updateOverworld() {
+    if (gameState !== 'overworld') return;
+
+    // Free roam diagonal normalized-style simple movement
+    let dx = 0; let dy = 0;
+    if (keys['arrowup'] || keys['w']) dy = -1;
+    if (keys['arrowdown'] || keys['s']) dy = 1;
+    if (keys['arrowleft'] || keys['a']) dx = -1;
+    if (keys['arrowright'] || keys['d']) dx = 1;
+
+    // Apply movement
+    player.x += dx * player.speed;
+    player.y += dy * player.speed;
+
+    // Map Boundaries
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+    // Gate Condition
+    if (monstersDefeated >= targetMonsters) {
+        gate.open = true;
+        document.getElementById('objective-msg').innerText = "The Gate is OPEN! Run to Gregory!";
+        document.getElementById('objective-msg').style.color = "#2ecc71";
+    }
+
+    // Gate collision (if closed)
+    if (!gate.open && player.x + player.width > gate.x && player.y + player.height > gate.y && player.y < gate.y + gate.height) {
+        player.x = gate.x - player.width;
+    }
+
+    // Win condition check
+    if (gate.open && checkCollision(player, gregory)) {
+        gameState = 'won';
+        document.getElementById('win-screen').style.display = 'flex';
+    }
+
+    // Update and move Fart Monsters
+    monsters.forEach((monster, index) => {
+        monster.x += monster.vx;
+        monster.y += monster.vy;
+
+        // Bounce off walls
+        if (monster.x <= 0 || monster.x + monster.width >= canvas.width) monster.vx *= -1;
+        if (monster.y <= 0 || monster.y + monster.height >= canvas.height) monster.vy *= -1;
+        
+        // Prevent monsters crossing the gate area
+        if (!gate.open && monster.x + monster.width > gate.x) monster.vx *= -1;
+
+        // Check Collision with player to initiate battle
+        if (checkCollision(player, monster)) {
+            startBattle(index);
+        }
+    });
+}
+
+function checkCollision(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+}
+
+function drawOverworld() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Background grass elements
+    ctx.fillStyle = '#2196f3'; // Background water/void past gate
+    ctx.fillRect(720, 0, 80, 600);
+    ctx.fillStyle = '#27ae60'; // Safe Grass Zone
+    ctx.fillRect(0, 0, 720, 600);
+    ctx.fillStyle = '#2ecc71'; // Gregory's Garden Zone
+    ctx.fillRect(720, 200, 80, 200);
+
+    // Draw Gate
+    ctx.fillStyle = gate.open ? '#7f8c8d' : '#e74c3c';
+    ctx.fillRect(gate.x, gate.y, gate.width, gate.height);
+
+    // Draw Gregory
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(gregory.x, gregory.y, gregory.width, gregory.height);
+    ctx.fillStyle = 'white';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(" Gregory ❤️", gregory.x - 15, gregory.y - 5);
+
+    // Draw Player (Teck Yuan)
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    // Hair details
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(player.x, player.y, player.width, 8);
+
+    // Draw Fart Monsters
+    monsters.forEach(monster => {
+        ctx.fillStyle = '#9b59b6';
+        ctx.fillRect(monster.x, monster.y, monster.width, monster.height);
+        
+        // Fart cloud effect
+        ctx.fillStyle = 'rgba(155, 89, 182, 0.4)';
+        ctx.beginPath();
+        ctx.arc(monster.x + 10, monster.y + 40, 12, 0, Math.PI * 2);
+        ctx.arc(monster.x + 25, monster.y + 42, 10, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Sync UI text
+    document.getElementById('ui-hp').innerText = player.hp;
+    document.getElementById('ui-count').innerText = monstersDefeated;
+}
+
+// --- TURN BASED COMBAT ENGINE ---
+
+function startBattle(index) {
+    gameState = 'battle';
+    activeEnemyIndex = index;
+    
+    // Setup Battle Interface
+    document.getElementById('battle-screen').style.display = 'flex';
+    updateBattleStats();
+    document.getElementById('battle-log').innerText = "A pungent Fart Monster corners Teck Yuan! Choose an action.";
+}
+
+function updateBattleStats() {
+    const enemy = monsters[activeEnemyIndex];
+    document.getElementById('battle-player-hp').innerText = player.hp;
+    document.getElementById('battle-enemy-hp').innerText = enemy.hp;
+
+    // Update HP Graphic Bars
+    document.getElementById('player-hp-bar').style.width = `${(player.hp / player.maxHp) * 100}%`;
+    document.getElementById('enemy-hp-bar').style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
+}
+
+function playerAction(action) {
+    if (gameState !== 'battle') return;
+    const enemy = monsters[activeEnemyIndex];
+    let log = "";
+
+    if (action === 'attack') {
+        let dmg = Math.floor(Math.random() * 10) + 12; // 12-21 dmg
+        enemy.hp -= dmg;
+        log = `Teck Yuan swings his sword for ${dmg} damage! `;
+    } else if (action === 'heal') {
+        let heal = Math.floor(Math.random() * 10) + 20; // 20-29 heal
+        player.hp = Math.min(player.maxHp, player.hp + heal);
+        log = `Teck Yuan eats a refreshing snack and recovers ${heal} HP. `;
+    } else if (action === 'spray') {
+        // High risk crit action
+        if (Math.random() > 0.3) {
+            let dmg = Math.floor(Math.random() * 15) + 25; // 25-39 dmg
+            enemy.hp -= dmg;
+            log = `Crit! Teck Yuan uses Fart Spray counter-measures for ${dmg} damage! `;
+        } else {
+            log = `Oh no! The Fart Spray backfired and missed entirely! `;
+        }
+    }
+
+    if (enemy.hp <= 0) {
+        enemy.hp = 0;
+        updateBattleStats();
+        endBattle(true);
+        return;
+    }
+
+    updateBattleStats();
+    
+    // Enemy Turn after short delay
+    disableButtons(true);
+    document.getElementById('battle-log').innerText = log + "The monster prepares a counter-attack...";
+    
+    setTimeout(() => {
+        enemyTurn(log);
+    }, 1000);
+}
+
+function enemyTurn(playerLog) {
+    if (gameState !== 'battle') return;
+    const enemy = monsters[activeEnemyIndex];
+    
+    let dmg = Math.floor(Math.random() * 8) + 10; // 10-17 dmg
+    player.hp -= dmg;
+    
+    if (player.hp <= 0) {
+        player.hp = 0;
+        updateBattleStats();
+        gameState = 'lost';
+        document.getElementById('lose-screen').style.display = 'flex';
+        return;
+    }
+
+    updateBattleStats();
+    document.getElementById('battle-log').innerText = playerLog + `\nFart Monster uses Burp Blast dealing ${dmg} toxic damage!`;
+    disableButtons(false);
+}
+
+function disableButtons(status) {
+    const buttons = document.querySelectorAll('.battle-actions button');
+    buttons.forEach(btn => btn.disabled = status);
+}
+
+function endBattle(isVictory) {
+    disableButtons(false);
+    if (isVictory) {
+        monstersDefeated++;
+        monsters.splice(activeEnemyIndex, 1); // Remove defeated monster
+        document.getElementById('battle-log').innerText = "Victory! The Fart Monster dissolves into fresh air.";
+        
+        setTimeout(() => {
+            document.getElementById('battle-screen').style.display = 'none';
+            gameState = 'overworld';
+        }, 1200);
+    }
+}
+
+// --- MAIN GAME LOOP ---
+function gameLoop() {
+    updateOverworld();
+    drawOverworld();
+    requestAnimationFrame(gameLoop);
+}
+
+// Kick off game loop
+gameLoop();
+</script>
+
+</body>
+</html>
